@@ -1,0 +1,457 @@
+<script src="http://cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.1.6/ZeroClipboard.js" type="text/javascript"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#adminuploadban').validate({
+            rules:
+            {
+                "data[AgencysiteSetting][bannerurl]":
+                {
+                    //required:true,
+                    url:true,
+                   // remote:ajax_url+'users/validUserEmail'
+                }
+            },
+            messages:
+            {
+                "data[AgencysiteSetting][bannerurl]":
+                {
+                    //required:'Please enter email.',
+                    url:'Please enter valid url.',
+                    //remote:'Email address already exists.'
+                }
+            }
+        
+        
+        });
+        $('#admintab').validate({
+            rules:
+            {
+                "data[AgencysiteSetting][companywebaddress]":
+                {
+                    url:true,
+                  
+                },
+                "data[User][email]":
+                {
+                    required:true,
+                    email:true,
+                    remote:ajax_url+'dashboard/validEmail'
+                },
+                "data[AgencysiteSetting][additionalemailnotification]":
+                {
+                    required:true,
+                    email:true,
+                    remote:ajax_url+'dashboard/addvalidEmail'
+                   
+                },
+                "data[User][firstname]":
+                {
+                    required:true
+                   
+                },
+                "data[AgencysiteSetting][agencyname]":
+                {
+                    required:true
+                   
+                },
+                "data[AgencysiteSetting][subdomainname]":
+                {
+                    required:true
+                },
+                "data[AgencysiteSetting][zip]":
+                {
+                    required:true
+                }
+
+            },
+            messages:
+            {
+                "data[AgencysiteSetting][companywebaddress]":
+                {
+                    url:'Please enter valid url.'
+                    
+                },
+                "data[User][email]":
+                {
+                    required:'This is required field.',
+                    email:'Please enter a valid email.',
+                    remote:'Email is already exist.'
+                    
+                },
+                "data[AgencysiteSetting][additionalemailnotification]":
+                {
+                    required:'This is required field.',
+                    email:'Please enter a valid email.',
+                    remote:'Email is already exist.'
+                  
+                    
+                },
+                "data[User][firstname]":
+                {
+                    required:'This is required field.'
+                   
+                },
+                "data[AgencysiteSetting][agencyname]":
+                {
+                    required:'This is required field.'
+                   
+                },
+                "data[AgencysiteSetting][subdomainname]":
+                {
+                    required:'This is required field.'
+                }
+
+            }
+        
+        
+        });
+        $('#emailtalk').validate({
+            rules:
+            {
+                "data[AgencysiteSetting][emailtalk]":
+                {
+                    required:true,
+                    email:true,
+                  
+                }
+            },
+            messages:
+            {
+                "data[AgencysiteSetting][emailtalk]":
+                {
+                    required:'Please enter email.',
+                    email:'Please enter valid email.',
+                    
+                }
+            }
+        
+        
+        });
+         $('#changepass').validate({
+            rules:
+            {
+                "data[User][oldpass]":
+                {
+                    required:true,
+                    remote:ajax_url+'dashboard/checkValidPass'
+                  
+                },
+                "data[User][password]":
+                {
+                    required:true,
+                    minlength: 8
+                },
+                "data[User][cpassword]":
+                {
+                    required:true,
+                    equalTo:'#UserPassword'
+                }
+            },
+            messages:
+            {
+                "data[User][oldpass]":
+                {
+                    required:'Please enter current password.',
+                    remote:'Please enter valid current password'
+                    
+                },
+                "data[User][password]":
+                {
+                    required:"This field is required.",
+                    minlength: 'Password should be atleast 8 characters long.'
+                },
+                "data[User][cpassword]":
+                {
+                    required:"This field is required.",
+                    equalTo:'Password and confirm password does not match.'
+                }
+            }
+        
+        
+        });
+        
+
+
+});
+
+</script>
+
+ 
+ 
+<a href="<?php echo HTTP_ROOT?>dashboard">Go Dashboard</a>
+<div class="businesses container">
+<form accept-charset="utf-8" method="post" enctype= "multipart/form-data" id="admintab" action="<?php echo HTTP_ROOT?>dashboard/admin">
+    <legend>MY Account Detail</legend>
+    <input type="hidden" name="data[Agency][id]" value="<?php echo @$agency['AgencysiteSetting']['id']?>">
+    Email Address:<input type="text"  id="agencyemail" name="data[User][email]" value="<?php echo @$user['User']['email']?>"></br>
+    Additional Email Notification:
+    <input type="text" id="aditionalemail" name="data[AgencysiteSetting][additionalemailnotification]" value="<?php echo @$agency['AgencysiteSetting']['additionalemailnotification']?>"></br>
+    First Name:<input type="text"  id="ufirstname" name="data[User][firstname]" value="<?php echo @$user['User']['firstname']?>"></br>
+    Last Name:<input type="text"  id="ulastname" name="data[User][lastname]" value="<?php echo @$user['User']['lastname']?>"></br>
+    Company Name:<input type="text"  id="agencyemail" name="data[AgencysiteSetting][agencyname]" value="<?php echo @$agency['AgencysiteSetting']['agencyname']?>"></br>
+    Street Address:<input class="field text full" type="text" id="AddressLine1" name="data[AgencysiteSetting][addressline1]" value="<?php echo @$agency['AgencysiteSetting']['addressline1']?>" ></br>
+    Street Address Line2:<input class="field text full" type="text" id="AddressLine2" name="data[AgencysiteSetting][addressline2]" value="<?php echo @$agency['AgencysiteSetting']['addressline2']?>" ></br>
+   
+    Country:<select id="find_country" name="data[AgencysiteSetting][country_id]">
+                <option value=""><?php  echo "Select Country"?></option>
+                               <?php foreach($countries as $key=>$val){?>
+                                    <option <?php if(@$agency['AgencysiteSetting']['country_id']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+                                <?php } ?>
+                </select></br>
+    State/Province:<select id="find_state" name="data[AgencysiteSetting][state_id]">
+                        <option value="">Select State</option>
+                        <?php foreach($states as $key=>$val){?>
+                                    <option <?php if(@$agency['AgencysiteSetting']['state_id']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+                        <?php } ?>
+                    </select></br>
+    City:<select id="find_city" name="data[AgencysiteSetting][city_id]">
+    <option value="">Select City</option>
+                        <?php foreach($cities as $key=>$val){?>
+                                    <option <?php if(@$agency['AgencysiteSetting']['city_id']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+                        <?php } ?>
+    </select></br>
+    Zip:<input type="text" id="AgencyZip" maxlength="20" name="data[AgencysiteSetting][zip]" value="<?php echo @$agency['AgencysiteSetting']['zip']?>"></br>
+    Phone:<input type="tel" id="AgencyPhone" maxlength="255" name="data[AgencysiteSetting][phone]" value="<?php echo @$agency['AgencysiteSetting']['phone']?>"></br>
+    Company Web Address:<input type="text" id="Agencywebaddress" maxlength="100" name="data[AgencysiteSetting][companywebaddress]" value="<?php echo @$agency['AgencysiteSetting']['companywebaddress']?>"></br>
+   
+    Agency Subdomain:<input type="text" maxlength="20" id="AgencySubdomain" name="data[AgencysiteSetting][subdomainname]" value="<?php echo @$agency['AgencysiteSetting']['subdomainname']?>"></br>
+    Agency Domain:<input type="text" maxlength="20" id="Agencydomain" name="data[AgencysiteSetting][domainname]" value="<?php echo @$agency['AgencysiteSetting']['domainname']?>"></br>
+    Agency Logo:<input type="file" id="agencylogo" name="data[AgencysiteSetting][agencylogo]"></br>
+    Logo:<div><?php if(isset($agency['AgencysiteSetting']['agencylogo'])){?><img src="<?php echo HTTP_ROOT;?>/img/agencylogo/medium/<?php echo @$agency['AgencysiteSetting']['agencylogo'] ?>" style="width:100px;height:100px;border:2px solid;float:left"/><?php }?></div></br>
+    <input type="hidden" id="logoag" name="data[Agency][logoname]" value="<?php echo @$agency['AgencysiteSetting']['agencylogo']?>"></br>
+    <div class="submit" style="margin-top:70px;"><input type="submit" value="Submit"></div>
+</form>
+</br>
+<div style="margin-top:70px;">
+    <form accept-charset="utf-8" method="post" enctype= "multipart/form-data" id="adminuploadban" action="<?php echo HTTP_ROOT?>dashboard/admin/uploadbanner">
+        <legend><h2>Upload Banner</h2></legend>
+       <input type="hidden" name="data[Agency][id]" value="<?php echo @$agency['AgencysiteSetting']['id']?>">
+        Upload Banner:<input type="file" id="agencybanner" name="data[AgencysiteSetting][banner]"></br>
+        Current Banner:<div><?php if(isset($agency['AgencysiteSetting']['banner'])){?><img src="<?php echo HTTP_ROOT;?>/img/banner/medium/<?php echo @$agency['AgencysiteSetting']['banner'] ?>" style="width:100px;height:100px;border:2px solid;float:left"/><?php }?></div></br>
+        <input type="hidden" id="bannerag" name="data[Agency][banner]" value="<?php echo @$agency['AgencysiteSetting']['banner']?>"></br>
+      <div style="margin-top:70px;">  
+       Landing page url on banner:<input type="text" maxlength="50" id="bannerurl" name="data[AgencysiteSetting][bannerurl]" value="<?php echo @$agency['AgencysiteSetting']['bannerurl']?>"></br>
+        <div class="submit"><input type="submit" value="Submit"></div>
+    </form>    
+</div>
+<div style="margin-top:70px;">
+    <form accept-charset="utf-8" method="post" enctype= "multipart/form-data" id="emailtalk" action="<?php echo HTTP_ROOT?>dashboard/admin/emailtalk">
+        <legend><h2>Email Talk To Notification Pro</h2></legend>
+       <input type="hidden" name="data[Agency][id]" value="<?php echo @$agency['AgencysiteSetting']['id']?>">
+        Email:<input type="text" id="emailtalk" name="data[AgencysiteSetting][emailtalk]" value="<?php echo @$agency['AgencysiteSetting']['emailtalk']?>"></br>
+        
+        <div class="submit"><input type="submit" value="Submit"></div>
+    </form>    
+</div>
+<div style="margin-top:70px;">
+    <form accept-charset="utf-8" method="post" enctype= "multipart/form-data" id="changepass" action="<?php echo HTTP_ROOT?>dashboard/admin/changepass">
+        <legend><h2>Change Password</h2></legend>
+        <input type="hidden" name="data[Agency][id]" value="<?php echo @$agency['AgencysiteSetting']['id']?>">
+        Cuurent Password:<input type="password" id="oldpass" name="data[User][oldpass]"></br>
+        New Password:<input type="password" required="required" id="UserPassword" name="data[User][password]"></br>
+        Confirm Password:<input type="password" required="required" id="cpass" name="data[User][cpassword]"></br>
+        <div class="submit"><input type="submit" value="Submit"></div>
+    </form>    
+</div>
+<div style="margin-top:70px;">
+ <form accept-charset="utf-8" method="post" enctype= "multipart/form-data" id="register-emailNotification" action="<?php echo HTTP_ROOT?>dashboard/admin/regEmail">
+     
+            <legend><h2>REGISTRATION EMAIL NOTIFICATION</h2></legend>
+            <input type="hidden" name="data[Agency][id]" value="<?php echo @$agency['AgencysiteSetting']['id']?>">
+            <input type="hidden" name="data[Template][id]" value="<?php echo @$emailtemplate['AgencyTemplate']['id']?>">
+             <input type="hidden" name="data[Template][name]" value="Registered email notification.">
+            Business Owner Signup Lik:<div id="signupurl"><h2>
+            <div id="clipboard-text" name="clipboard-text" onclick="this.select();">
+            www.test.com
+            </div>
+            </h2></div></br><a href="www.test.com">Preview</a> 
+            <!-- <a href="#" data-clipboard-target="clipboard-text" id="btn-To-Copy">Copy</a></br> -->
+            <input data-clipboard-target="clipboard-text" id="btn-To-Copy" value="Copy" type="button"></br>
+            Show Business Owner Link:<input type="checkbox" id="signuplink" name="data[link]" checked="checked"></br>
+           Email Subject:<input type="text" id="email-subject" name="data[AgencyTemplate][emailsubject]" value="<?php echo @$emailtemplate['AgencyTemplate']['emailsubject']?>"></br>
+           Sender Name:<input type="text" id="sender-name" name="data[AgencyTemplate][sendername]" value="<?php echo @$emailtemplate['AgencyTemplate']['sendername']?>"></br>
+           Sender email:<input type="text" id="sender-email" name="data[AgencyTemplate][senderemail]" value="<?php echo @$emailtemplate['AgencyTemplate']['senderemail']?>"></br>
+           Email Content:<textarea name="data[AgencyTemplate][emailcontent]" id="cktext"><?php echo @$emailtemplate['AgencyTemplate']['emailcontent']?></textarea></br>
+           Email Signature:<textarea id="cktext1" name="data[AgencyTemplate][signature]"><?php echo @$emailtemplate['AgencyTemplate']['signature']?></textarea></br>       
+            <button type="submit" class="btn btn-default btn-success">Submit</button>
+            <input onclick="InsertText();" type="button" value="Restore Default">
+           <textarea cols="100" id="txtArea" rows="3" style="display:none;" name="data[AgencyTemplate][default]"><?php echo @$emailtemplate['AgencyTemplate']['default']?>
+
+</textarea>
+            <input type="button" value="Merge Fields" id="mergfields">
+     <div id="mrgArea" style="display:none;"> <textarea cols="100"  rows="3" name="data['AgencyTemplate']['meargefields']"><?php echo @$emailtemplate['AgencyTemplate']['meargefields']?></textarea></div> 
+      </form>
+     
+</div>
+
+<script>
+$('document').ready(function(){
+    $('#signuplink').click(function() {
+    if( $(this).is(':checked')) {
+        $("#signupurl").show();
+    } else {
+        $("#signupurl").hide();
+    }
+}); 
+});
+</script>
+<script type="text/javascript">
+        var client = new ZeroClipboard(document.getElementById("btn-To-Copy"));
+        client.on("ready", function (readyEvent) {
+            client.on("aftercopy", function (event) {
+           });
+        });
+</script>
+<script>
+     $(document).ready(function(){
+        $("#mergfields").click(function(){
+          $("#mrgArea").show();
+          
+        });
+         var validator = $("#register-emailNotification").validate(
+            {
+              ignore: [],
+              rules: { 
+                    "data['AgencyTemplate']['emailcontent']":{
+                            required: function() 
+                            {
+                                CKEDITOR.instances.cktext.updateElement();
+                                
+                            }
+                          
+                    },
+                    "data[AgencyTemplate][signature]":{
+                            required: function() 
+                            {
+                                CKEDITOR.instances.cktext1.updateElement();
+                                
+                            }
+                          
+                    },
+                    "data[AgencyTemplate][emailsubject]":{
+                            required:true
+                        },
+                    "data[AgencyTemplate][sendername]":{
+                            required:true
+                        },
+                    "data[AgencyTemplate][senderemail]":{
+                            required:true,
+                            email:true
+                        }     
+                },
+                messages:
+                    {
+
+                    "data['AgencyTemplate']['emailcontent']":{
+                        required:"This is required field",
+                    },
+                    "data['AgencyTemplate']['signature']":{
+                        required:"This is required field",
+                    },
+                    "data[AgencyTemplate][emailsubject]":{
+                           required:"This is required field.",
+                        },
+                    "data[AgencyTemplate][sendername]":{
+                            required:"This is required field.",
+                        },
+                    "data[AgencyTemplate][senderemail]":{
+                            required:"This is required field.",
+                            email:"Please enter valid email.",
+                        }      
+                },
+                errorPlacement: function(error, $elem) {
+                    if ($elem.is('textarea')) {
+                        $elem.next().css('border', '1px solid red');
+                        error.insertAfter($elem.next());
+                        CKEDITOR.instances.cktext.focus();
+                    }else{
+                         error.insertAfter($elem); 
+                    }
+                },
+            }); 
+        validator.focusInvalid = function() {
+            if( this.settings.focusInvalid ) {
+                try {
+                    var toFocus = $(this.findLastActive() || this.errorList.length && this.errorList[0].element || []);
+                    if (toFocus.is("textarea")) {
+                         if(CKEDITOR.instances.cktext.getData()==''){
+                            CKEDITOR.instances.cktext.focus();
+                         }else{
+                            CKEDITOR.instances.cktext1.focus();
+                         }
+                    } else {
+                        toFocus.filter(":visible").focus();
+                    }
+                } catch(e) {
+                }
+            }
+        }
+    });
+</script>
+<script type="text/javascript">
+   window.onload = function()
+   {
+      CKEDITOR.replace( 'cktext' , {
+        resize_enabled: false,
+        removeButtons: 'Save,NewPage,Preview,Templates',
+        width: '80%'});
+      CKEDITOR.replace( 'cktext1', {
+        resize_enabled: false,
+        removeButtons: 'Save,NewPage,Preview,Templates',
+        width: '80%' });
+
+      CKEDITOR.instances.cktext.on('contentDom', function() {
+        CKEDITOR.instances.cktext.document.on('keyup', function(event) {
+           if(CKEDITOR.instances.cktext.getData()==''){
+                $("[for='cktext']").css('display','block');
+                $('#cktext').removeClass('valid');
+                $('#cktext').addClass('error');
+                $('#cktext').next().css('border','1px solid red');
+           }else{
+                $("[for='cktext']").css('display','none');
+                $('#cktext').removeClass('error');
+                $('#cktext').addClass('valid');
+                $('#cktext').next().css('border','none');
+           }
+        });
+    });
+
+    CKEDITOR.instances.cktext1.on('contentDom', function() {
+        CKEDITOR.instances.cktext1.document.on('keyup', function(event) {
+           if(CKEDITOR.instances.cktext1.getData()==''){
+                $("[for='cktext1']").css('display','block');
+                $('#cktext1').removeClass('valid');
+                $('#cktext1').addClass('error');
+                $('#cktext1').next().css('border','1px solid red');
+           }else{
+                $("[for='cktext1']").css('display','none');
+                $('#cktext1').removeClass('error');
+                $('#cktext1').addClass('valid');
+                $('#cktext1').next().css('border','none');
+           }
+        });
+    });  
+   };
+   function InsertText() {
+        var editor = CKEDITOR.instances.cktext;
+        var value = document.getElementById( 'txtArea' ).value;
+         $("[for='cktext']").css('display','none');
+                    $('#cktext').removeClass('error');
+                    $('#cktext').addClass('valid');
+                    $('#cktext').next().css('border','none');
+        if ( editor.mode == 'wysiwyg' )
+        {
+            editor.setData( value );
+         
+        }
+        else
+            alert( 'You must be in WYSIWYG mode!' );
+    }
+
+    function MeargeField(){
+       //$("#mergfields").click(function(){
+         // $("#mrgArea").slideToggle();
+        //});
+    }
+
+</script>

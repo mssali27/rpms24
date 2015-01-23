@@ -1,0 +1,363 @@
+<?php
+App::uses('AppController', 'Controller');
+/**
+ * Businesses Controller
+ *
+ * @property Business $Business
+ * @property PaginatorComponent $Paginator
+ */
+class BusinessesController extends AppController {
+
+/**
+ * Components
+ *
+ * @var array
+ */
+	public $components = array('Paginator','RequestHandler');
+	
+
+/**
+ * index method
+ *
+ * @return void
+ */
+	public function index() {
+		$this->Business->recursive = 0;
+		$this->set('businesses', $this->Paginator->paginate());
+		$this->Business->find();
+		
+	}
+
+/**
+ * view method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function view($id = null) {
+		
+		if (!$this->Business->exists($id)) {
+			throw new NotFoundException(__('Invalid business'));
+		}
+		$options = array('conditions' => array('Business.' . $this->Business->primaryKey => $id));
+		$this->set('business', $this->Business->find('first', $options));
+	}
+
+/**
+ * add method
+ *
+ * @return void
+ */
+	public function add($par=null) {
+		$this->loadModel('SocialMedia');
+		$socialmedia = $this->SocialMedia->find('list',array('fields'=>array('id','mediasitename')));
+		$this->set('socialmedia', $socialmedia);
+		if ($this->request->is('post') && !$par) {
+			$this->request->data['User']['usertype'] = 'subscriber';
+			$this->loadModel('User');
+			$this->User->create();
+			if ($this->User->save($this->request->data['User'])) {
+			    $this->request->data['Business']['user_Id'] =intval($this->User->getLastInsertId());
+			    $this->request->data['Business']['business_category_id']=intval($this->request->data['Business']['business_category_id']);
+			    $this->request->data['Business']['createdat']=Date('Y-m-d');
+			    $this->request->data['Business']['agency_id']=$this->Session->read('Auth.User.id');
+			  // pr($this->request->data);die;
+			    $this->Business->create();
+				if ($this->Business->save($this->request->data['Business'])) {
+					$this->Session->setFlash(__('The business has been saved.'));
+					return $this->redirect(array('controller'=>'dashboard','action' => 'manageUser'));
+				} else {
+					$this->Session->setFlash(__('The business could not be saved. Please, try again.'));
+				}
+			} else {
+				$this->Session->setFlash(__('The user could not be saved. Please, try again.'));
+			}			
+		}
+		if($par && $par=='addnew'){
+           $this->set('bname',$this->request->data['Business']['name']);
+		}
+		$parentBusinesses   = $this->Business->ParentBusiness->find('list');
+		$businessCategories = $this->Business->BusinessCategory->find('list');
+		$countries = $this->Business->Country->find('list',array('fields'=>array('id','country_name'),'order'=>array('country_name ASC')));
+		$this->set(compact('parentBusinesses', 'businessCategories', 'countries'));
+	}
+
+	public function updateBusiness($id=null) {
+		if($this->request->is('post')) {
+				$this->loadModel('User');
+				//$this->User->create();
+				if ($this->User->save($this->request->data['User'])) {
+					$this->request->data['Business']['usertype'] = 'subscriber';
+					//$this->request->data['Business']['user_Id'] = $this->User->getLastInsertId();
+					//$this->Business->create();
+					if ($this->Business->save($this->request->data['Business'])) {
+						$this->Session->setFlash(__('The business has been saved.'));
+						return $this->redirect(array('controller'=>'dashboard','action' => 'manageUser'));
+					} else {
+						$this->Session->setFlash(__('The business could not be saved. Please, try again.'));
+					}
+				} else {
+					$this->Session->setFlash(__('The user could not be saved. Please, try again.'));
+				}			
+			}
+		else{
+		    if(!$id){
+			$this->redirect($this->referer());
+		    }else{
+		    	
+				$data=$this->Business->findById(base64_decode($id));
+				
+				$this->set('data', $data);
+				$this->loadModel('User');
+				$userdata=$this->User->findById($data['Business']['user_Id']);
+				$this->set('userdata', $userdata);
+				$this->loadModel('SocialMedia');
+				$socialmedia = $this->SocialMedia->find('list',array('fields'=>array('id','mediasitename')));
+				$this->set('socialmedia', $socialmedia);
+				$parentBusinesses   = $this->Business->ParentBusiness->find('list',array('fields'=>array('id','businessname')));
+				$businessCategories = $this->Business->BusinessCategory->find('list');
+				$countries = $this->Business->Country->find('list',array('fields'=>array('id','country_name'),'order'=>array('country_name ASC')));
+				$this->set(compact('parentBusinesses', 'businessCategories', 'countries'));
+				$this->loadModel('State');
+				$states= $this->State->find('list',array('fields'=>array('id','stateName'),'order'=>array('stateName ASC')));
+				$this->set('states',$states);
+				$this->loadModel('City');
+				$cities= $this->City->find('list',array('fields'=>array('id','city_name'),'conditions'=>array('City.state_id'=>$data['State']['id']),'order'=>array('city_name ASC')));
+				$this->set('cities',array_unique($cities));
+			}
+		}	
+		
+	}
+
+
+/**
+ * edit method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function edit($id = null) {
+		//die("fngkjdf");
+		$this->Business->id = $id;
+		if (!$this->Business->exists($id)) {
+			throw new NotFoundException(__('Invalid business'));
+		}
+		if ($this->request->is(array('post', 'put'))) {
+
+			$user_Id = $this->request->data['Business']['user_Id'];
+
+			if ($this->Business->save($this->request->data['Business'])) {
+
+				$this->loadModel('User');
+				$this->User->id = $user_Id;
+				$this->User->save($this->request->data['User']);
+				$this->Session->setFlash(__('The business has been saved.'));
+				return $this->redirect(array('action' => 'index'));
+			} else {
+				$this->Session->setFlash(__('The business could not be saved. Please, try again.'));
+			}
+		} else {
+			$options = array('conditions' => array('Business.' . $this->Business->primaryKey => $id));
+			$business = $this->Business->find('first', $options);
+			$this->request->data['Business'] = $business['Business'];
+			$user_Id = $this->request->data['Business']['user_Id'];
+			$this->loadModel('User');
+			$useroptions = array('conditions' => array('User.' . $this->User->primaryKey => $user_Id));
+			$user = $this->User->find('first', $useroptions);
+			$this->request->data['User'] = $user['User'];
+		}
+
+		$parentBusinesses = $this->Business->ParentBusiness->find('list');
+		$businessCategories = $this->Business->BusinessCategory->find('list');
+		$countries = $this->Business->Country->find('list', array('fields'=>array('id','country_name')));
+		$states = $this->Business->State->find('list', array('fields'=>array('id','stateName')));
+		$cities = $this->Business->City->find('list', array('fields'=>array('id','city_name')));
+		$this->set(compact('parentBusinesses', 'businessCategories','countries', 'states', 'cities'));
+	}
+
+/**
+ * delete method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function delete($id = null) {
+		$this->Business->id = $id;
+		$specificallyThisOne = $this->Business->find('first', array(
+	        'conditions' => array('Business.id' => $id)
+	 	));
+		if (!$this->Business->exists()) {
+			throw new NotFoundException(__('Invalid business'));
+		}
+		$this->request->allowMethod('post', 'delete');
+		if ($this->Business->delete()) {
+	 	  	$user_Id = $specificallyThisOne['Business']['user_Id'];
+			$this->loadModel('User');
+			$this->User->id = $user_Id;
+			$this->User->delete();
+			$this->Session->setFlash(__('The business has been deleted.'));
+		} else {
+			$this->Session->setFlash(__('The business could not be deleted. Please, try again.'));
+		}
+		return $this->redirect(array('action' => 'index'));
+	}
+
+	public function findState()
+    {	
+    	$this->autoRender=false;
+        if ($this->request->is('Ajax'))
+        {
+        	$country_id = $this->data['id'];
+
+	        $data = $this->Business->State->find('list',array('conditions'=>array('State.country_id'=>$country_id), 'fields'=>array('State.id','stateName'),'order'=>array('stateName ASC')));   
+	        $data=array_unique($data);
+	        asort($data);
+	        //pr($data);die;
+	        $this->set('states', $data);
+            echo json_encode(array('html' => $data));
+        }
+    }
+    public function findCity()
+    {	
+    	$this->autoRender=false;
+        if ($this->request->is('Ajax'))
+        {
+        	$state_id = $this->data['id'];
+	        $data = $this->Business->City->find('list',array('conditions'=>array('City.state_id'=>$state_id), 'fields'=>array('id','city_name'),'order'=>array('city_name ASC')));  
+	        $data=array_unique($data);
+	        sort($data);
+	        $this->set('cities', array_unique($data));
+            echo json_encode(array('html' => $data));
+        }
+    }
+
+    public function resetPassword($id=null)
+    {	
+    	if($this->request->is('post')){
+    		$this->loadModel('User');
+    		//pr($this->request->data['User']);die;
+    		if($this->User->save($this->request->data['User'])){
+                $this->Session->setFlash(__('Password has been reset successfully.'));
+                $this->redirect(array('controller'=>'dashboard','action'=>'manageUser'));
+    		}else{
+    			 $this->Session->setFlash(__('Unable to reset password.'));
+    			 $this->redirect(array('controller'=>'dashboard','action'=>'manageUser'));
+    		}
+		}else{
+			if($id){
+				$this->loadModel('User');
+				$udata=$this->User->findById(base64_decode($id));
+				//pr($udata);die(base64_decode($id));
+				if(count($udata)>0){
+					$this->set('udata',$udata);
+				}else{
+					$this->Session->setFlash(__('Invalid User Id.'));
+					 $this->redirect(array('controller'=>'dashboard','action'=>'manageUser'));
+				}
+			    
+			}else{
+			  $this->redirect($this->referer());
+			}
+		}
+    }
+
+    public function deleteBusiness($id=null,$uid=null){
+    		if($id && $uid){
+    			$id=base64_decode($id);
+    			$uid=base64_decode($uid);
+    			$data['Business']['id']=$id;
+    			$data['Business']['is_deleted']=1;
+    			// if($this->Business->delete($id)){
+    			if($this->Business->save($data)){
+    				//$this->loadModel('User');
+    				//$this->User->delete($uid);
+    				$this->Session->setFlash('Record delete successfully.');
+					$this->redirect($this->referer());
+    			}else{
+    				$this->Session->setFlash('Unable to delete the record.');
+					$this->redirect($this->referer());	
+    			}
+    		}else{
+    			$this->Session->setFlash(__('Invalid Business Id.'));
+			    $this->redirect(array('controller'=>'dashboard','action'=>'manageUser'));
+    		}
+    }
+
+   public function resendCredentail($uid=null){
+    		if($uid){
+    			$uid=base64_decode($uid);
+    			$this->loadModel('User');
+    			$udata=$this->User->findById($uid);
+    			//pr($udata);die;
+    			if(count($udata)>0){
+    				$user=$udata['User']['email'];
+    				//$user="mss.mohdali@gmail.com";
+    				$pass=$this->RandomStringGenerator(); 
+    				$from="support@repmgsys.com";
+    				$email_template="Usernam=$user </br> Password=$pass";
+    				$data['User']['id']=$uid;
+    				$data['User']['password']=$pass;
+
+    				if($this->User->save($data)){
+    					$this->sendEmail($email_template,$from,$user);
+    					$this->Session->setFlash('Credential has been sent. Please check your email.');
+						$this->redirect($this->referer());	
+    				}else{
+    					$this->Session->setFlash('Unable to send the user resendCredentail.');
+						$this->redirect($this->referer());	
+    				}
+    			}else{
+    				$this->Session->setFlash('Unable to send the user resendCredentail.');
+					$this->redirect($this->referer());	
+    			}
+    		}else{
+    			$this->Session->setFlash(__('Invalid User Id.'));
+			    $this->redirect(array('controller'=>'dashboard','action'=>'manageUser'));
+    		}
+    } 
+
+    public function businessDashboard($id=null){
+    	die("Business Dashboard is under construction.");
+    }
+
+    public function report(){
+    	if($this->request->is('post') && $this->request->data['Business']['id']){
+    		$busIds=$this->Business->find('list',array('conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0,'Business.id'=>$this->request->data['Business']['id']),'fields'=>array('Business.id')));
+    		$this->set('selectedId',$this->request->data['Business']['id']);
+    		$this->loadModel('Customer');
+	    	$successFeed=$this->Customer->find('count',array('conditions'=>array('Customer.status'=>'NotInFeedbackSequence','Customer.business_id'=>$this->request->data['Business']['id'])));
+	    	$this->set('success',$successFeed);
+	    	$notFeed=$this->Customer->find('count',array('conditions'=>array('Customer.status'=>'InFeedbackSequence','Customer.business_id'=>$this->request->data['Business']['id'])));
+	    	$this->set('notFeed',$notFeed);
+    	}else{
+    		$busIds=$this->Business->find('list',array('conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0),'fields'=>array('Business.id')));
+    		$this->set('selectedId',"");
+    		$this->loadModel('Customer');
+	    	$successFeed=$this->Customer->find('count',array('conditions'=>array('Customer.status'=>'NotInFeedbackSequence')));
+	    	$this->set('success',$successFeed);
+	    	$notFeed=$this->Customer->find('count',array('conditions'=>array('Customer.status'=>'InFeedbackSequence')));
+	    	$this->set('notFeed',$notFeed);
+    	}
+    	$this->loadModel('BusinessReview');
+    	$onestar=$this->BusinessReview->find('count',array('conditions'=>array('BusinessReview.business_id'=>$busIds,'BusinessReview.ratingstar'=>1)));
+    	$this->set('onestar',$onestar);
+    	$twostar=$this->BusinessReview->find('count',array('conditions'=>array('BusinessReview.business_id'=>$busIds,'BusinessReview.ratingstar'=>2)));
+    	$this->set('twostar',$twostar);
+    	$threestar=$this->BusinessReview->find('count',array('conditions'=>array('BusinessReview.business_id'=>$busIds,'BusinessReview.ratingstar'=>3)));
+    	$this->set('threestar',$threestar);
+    	$fourstar=$this->BusinessReview->find('count',array('conditions'=>array('BusinessReview.business_id'=>$busIds,'BusinessReview.ratingstar'=>4)));
+    	$this->set('fourstar',$fourstar);
+    	$fivestar=$this->BusinessReview->find('count',array('conditions'=>array('BusinessReview.business_id'=>$busIds,'BusinessReview.ratingstar'=>5)));
+    	$this->set('fivestar',$fivestar);
+    	$allbusiness=$this->Business->find('all',array('contain'=>false,'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0),'fields'=>array('Business.id','Business.businessname')));
+    	$this->set('allbusiness',$allbusiness);
+
+    	
+    	
+    }
+
+    
+}

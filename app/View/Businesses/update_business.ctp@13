@@ -1,0 +1,137 @@
+<script type="text/javascript">
+$(document).ready(function(){
+	$('#BusinessAddForm').validate({
+			rules:
+			{
+				"data[User][email]":
+				{
+					required:true,
+					email:true,
+					remote:ajax_url+'users/checkUserEmail'
+				},
+				
+				"data[User][password]":
+				{
+					required:true,
+					minlength: 6
+				},
+				"data[User][cpassword]":
+				{
+					required:true,
+					equalTo:'#pwd'
+				},
+				"data[Business][businessname]":
+				{
+					required:true,
+				}
+			},
+			messages:
+			{
+				"data[User][email]":
+				{
+					required:'Please enter email.',
+					email:'Please enter valid email.',
+					remote:'Email address already exists.'
+				},
+				"data[User][password]":
+				{
+					required:"This field is required.",
+					minlength: 'Password should be atleast 6 characters long.'
+				},
+				"data[User][cpassword]":
+				{
+					required:"This field is required.",
+					equalTo:'Password and confirm password does not match.'
+				},
+				"data[Business][businessname]":
+				{
+					required:"This field is required.",
+				}
+				
+			}
+		
+		
+		});
+		
+	
+	});
+</script>
+
+<div class="businesses container">
+<form accept-charset="utf-8" method="post" id="BusinessAddForm" action="<?php echo HTTP_ROOT?>businesses/updateBusiness">
+	<legend>Edit Business</legend>
+	<input type="hidden" id="id" name="data[User][id]" value="<?php echo $data['Business']['user_Id'];?>">
+	<!--Business Name :<input type="text" required="required" id="BusinessBusinessname" maxlength="255" name="data[Business][businessname]"></br>-->
+	First Name:<input type="text" id="UserFirstname" name="data[User][firstname]" value="<?php echo @$userdata['User']['firstname'];?>"></br>
+	Last Name:<input type="text" id="UserLastname" name="data[User][lastname]" value="<?php echo @$userdata['User']['lastname'];?>"></br>
+	<input type="hidden" id="id" name="data[User][id]" value="<?php echo $data['Business']['id'];?>">
+	<input type="hidden" id="id" name="data[Business][id]" value="<?php echo $data['Business']['id'];?>">
+	Business Name:<input type="text" id="Businessname" name="data[Business][businessname]" value="<?php echo $data['Business']['businessname'];?>"></br>
+	Parent Business:<select  id="ParentId" name="data[Business][parent_id]">
+								<option value=""><?php echo "Select Parent Bussiness"?></option>
+								<?php foreach($parentBusinesses as $key=>$val){?>
+								    <option <?php if($data['Business']['parent_id']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+								<?php } ?>
+						   </select></br>
+	Main Business Category:<select required="required" id="BusinessBusinessCategoryId" name="data[Business][business_category_id]">
+							<option value=""><?php echo "Select Bussiness Category"?></option>
+								<?php foreach($businessCategories as $key=>$val){?>
+								    <option <?php if($data['Business']['business_category_id']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+								<?php } ?>
+						</select></br>
+	Street Address:<input type="text" required="required" id="BusinessAddressline1" maxlength="255" name="data[Business][addressline1]" value="<?php echo $data['Business']['addressline1'];?>"></br>
+	Street Address Line 2:<input type="text" required="required" id="BusinessAddressline2" maxlength="255" name="data[Business][addressline2]" value="<?php echo $data['Business']['addressline2'];?>"></br>
+	Country:<select required="required" id="find_country" name="data[Business][country]">
+				<option value=""><?php echo "Select Country"?></option>
+								<?php foreach($countries as $key=>$val){?>
+								    <option <?php if($data['Business']['country']==$key){?>selected="selected"<?php }?> value="<?php echo $key?>"><?php echo $val?></option>
+								<?php } ?>
+				</select></br>
+	State/Province:<select required="required" id="find_state" name="data[Business][state]">
+						<option value="">Select State</option>
+					</select></br>
+	City:<select required="required" id="find_city" name="data[Business][city]">
+	<option value="">Select City</option>
+	</select></br>
+	Zip:<input type="text" required="required" id="BusinessZip" maxlength="20" name="data[Business][zip]" value="<?php echo $data['Business']['zip'];?>"></br>
+	Phone:<input type="tel" required="required" id="BusinessPhone" maxlength="255" name="data[Business][phone]" value="<?php echo $data['Business']['phone'];?>"></br>
+	Company Web Address:<input type="text" required="required" id="BusinessCompanywebaddress" maxlength="100" name="data[Business][companywebaddress]" value="<?php echo $data['Business']['companywebaddress'];?>"></br>
+	
+	Feedback Threshold:<select required="required" id="feedbackthreshold" name="data[Business][feedbackthreshold]" value="<?php echo $data['Business']['feedbackthreshold'];?>">
+	<option value="">Select</option>
+	<option value="1">1</option>
+	
+	</select></br>
+	Number of automated E-mail attempts :<select required="required" id="automatedenailattempts" name="data[Business][automatedenailattempts]">
+		<option value="">Select</option>
+		<option value="1">1</option>
+		<option value="2">2</option>
+		<option value="3">3</option>
+		<option value="4">4</option>
+		<option value="5">5</option>
+		<option value="6">6</option>
+		<option value="7">7</option>
+		<option value="8">8</option>
+		<option value="9">9</option>
+		<option value="10">10</option>
+		</select></br>
+	Email Frequency:<select required="required" id="emailfrequency" name="data[Business][emailfrequency]">
+					<option value="">Select</option>
+					<option value="1">1</option>
+					</select></br>
+	Social Sharing Checker: <select name="data[Business][Attendees][]" multiple="multiple" id="BusinessAttendees">
+						<option value=""><?php echo "Social Sharing Checker"?></option>
+								<?php foreach($socialmedia as $key=>$val){?>
+								    <option value="<?php echo $key?>"><?php echo $val?></option>
+								<?php } ?>
+						</select>
+        </br>
+        
+	Visibility Checker:<select name="data[Business][visibilitychecker][]" multiple="multiple" id="BusinessAttendees">
+						<option value=""><?php echo "Social Sharing Checker"?></option>
+								<?php foreach($socialmedia as $key=>$val){?>
+								    <option value="<?php echo $key?>"><?php echo $val?></option>
+								<?php } ?>
+						</select>
+<div class="submit"><input type="submit" value="Submit">
+</form>

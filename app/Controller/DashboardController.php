@@ -1,0 +1,567 @@
+<?php
+App::uses('AppController', 'Controller');
+/**
+ * Dashboard Controller
+ *
+ * @property Dashboard $Dashboard
+ * @property PaginatorComponent $Paginator
+ */
+class DashboardController extends AppController {
+
+/**
+ * Components
+ *
+ * @var array
+ */
+	public $components = array('Paginator','Resize');
+
+/**
+ * index method
+ *
+ * @return void
+ */
+	public function index() {
+		$this->loadModel('Business');
+		$this->Business->recursive = 0;
+		$this->paginate = array('limit'=>'15','contain'=>'User','order'=>array('Business.id'=>'DESC'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0));
+		// pr($this->paginate('Business'));die;
+		$this->set('businesses',$this->paginate('Business'));
+		$businessesdata=$this->Business->find('all',array('contain'=>false,'order'=>array('Business.id'=>'DESC'),'fields'=>array('Business.id','Business.businessname','Business.totalReviews','Business.lastReviewdate','Business.averageRating'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0, 'Business.totalReviews !='=>0)));
+		
+		$this->set('businessesdata',$businessesdata);
+	}
+    
+
+    public function subscriber() {
+		//die("Business Deshboard is under construction.");
+	}
+/**
+ * Get average ratings
+ */
+
+	public function averageRatings ($businessId){
+		$this->loadModel('BusinessReview');
+		//get one star ratings
+		$oneStart = $this->BusinessReview->find('count', array(
+				    'fields' => array('BusinessReview.ratingstar'),
+				    'conditions' => array("BusinessReview.ratingstar" => '1' ,"BusinessReview.business_id" => $businessId) 
+				)); 
+		//get two star ratings
+		$twoStart = $this->BusinessReview->find('count', array(
+				    'fields' => array('BusinessReview.ratingstar'),
+				    'conditions' => array("BusinessReview.ratingstar" => '2' ,"BusinessReview.business_id" => $businessId) 
+				)); 
+		//get three star ratings
+		$threeStart = $this->BusinessReview->find('count', array(
+				    'fields' => array('BusinessReview.ratingstar'),
+				    'conditions' => array("BusinessReview.ratingstar" => '3' ,"BusinessReview.business_id" => $businessId) 
+				)); 
+		//get four star ratings
+		$fourStart = $this->BusinessReview->find('count', array(
+				    'fields' => array('BusinessReview.ratingstar'),
+				    'conditions' => array("BusinessReview.ratingstar" => '4' ,"BusinessReview.business_id" => $businessId) 
+				)); 
+		//get five star ratings
+		$fiveStart = $this->BusinessReview->find('count', array(
+				    'fields' => array('BusinessReview.ratingstar'),
+				    'conditions' => array("BusinessReview.ratingstar" => '5' ,"BusinessReview.business_id" => $businessId) 
+				)); 
+		//get total stars
+		$totalStars = $this->BusinessReview->find('count', array(
+		    'fields' => array('BusinessReview.ratingstar'),
+		    'conditions' => array("BusinessReview.business_id" => $businessId) 
+		)); 
+
+		if($totalStars == 0){
+			return 'No Ratings';	
+		}
+		$averageRatings = (5*$fiveStart + 4*$fourStart + 3*$threeStart + 2*$twoStart + 1*$oneStart) / $totalStars;
+		
+		return $averageRatings;
+	} 
+
+/**
+ * Get last review date
+ **/
+	
+	public function lastReviewDate($businessId) {
+			$this->loadModel('BusinessReview');
+			$reviewDate = $this->BusinessReview->find('all', array(
+			    'fields' => array('BusinessReview.ratingdate'),
+			    'conditions' => array("BusinessReview.business_id" => $businessId) ,
+			    'order' => array('BusinessReview.ratingdate DESC') 
+			)); 
+
+			if(isset($reviewDate) && !empty($reviewDate)) 
+				return $reviewDate[0]['BusinessReview']['ratingdate'];
+			else
+				return 'No Reviews';
+	}
+/**
+ * Get total review
+ **/
+	
+	public function totalReviews($businessId) {
+			$this->loadModel('BusinessReview');
+			$allReviews = $this->BusinessReview->find('count', array(
+			    'fields' => array('BusinessReview.ratingdate'),
+			    'conditions' => array("BusinessReview.business_id" => $businessId) 
+			)); 
+
+			return $allReviews;
+	}
+
+/**
+ * Search business
+ **/
+
+	public function searchBusiness() { 
+		//when press submit
+		if($this->request->is('post')){
+			$searchValue = $this->request->data['searchForm']['search'];
+			$this->loadModel('Business');
+			$this->Business->recursive = 0;
+			$this->paginate = array('contain'=>'User',
+					    'conditions' => array(
+					    'Business.agency_id'=>$this->Session->read('Auth.User.id'),	
+					    'Business.businessname LIKE' => "%$searchValue%",'Business.is_deleted'=>0));
+			$this->set('businesses',$this->paginate('Business'));
+			//$this->set('selectedTab', 'feedback');
+			$businessesdata=$this->Business->find('all',array('contain'=>false,'order'=>array('Business.id'=>'DESC'),'fields'=>array('Business.id','Business.businessname','Business.totalReviews','Business.lastReviewdate','Business.averageRating'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0)));
+			$this->set('businessesdata',$businessesdata);
+			return $this -> render('index');
+		//if get request redirect to index
+		}else {
+			$this->redirect( '/dashboard' );
+		}
+	}
+/**
+ * manage Buiseness User
+ **/
+
+	public function manageUser() { 
+		if(isset($this->request->data['searchForm']['search'])){
+			$searchValue=$this->request->data['searchForm']['search'];
+			$this->loadModel('BusinessCategory');
+			$bcat=$this->BusinessCategory->find('list',array('conditions'=>array('BusinessCategory.name LIKE' => "%$searchValue%"),'fields'=>array('BusinessCategory.id')));
+			//pr($bcat);die;
+			$this->loadModel('Business');
+			$this->Business->recursive = 0;
+			$this->paginate = array(
+					    'conditions' => array(
+					     'Business.is_deleted'=>0,	
+					     'Business.agency_id'=>$this->Session->read('Auth.User.id'), 'OR'=>array('Business.business_category_id'=>$bcat,'Business.businessname LIKE' => "%$searchValue%")));
+
+			//pr($this->paginate);die;
+			$this->set('businesses',$this->paginate('Business'));
+			$businessesdata=$this->Business->find('all',array('contain'=>false,'order'=>array('Business.id'=>'DESC'),'fields'=>array('Business.id','Business.businessname','Business.totalReviews','Business.lastReviewdate','Business.averageRating'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0,'Business.totalReviews !='=>0)));
+			$this->set('businessesdata',$businessesdata);
+
+		}else{
+			$this->loadModel('Business');
+			$this->Business->recursive = 0;
+			$this->paginate = array('limit'=>'15','order'=>array('Business.id'=>'DESC'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0));
+	        //$travel = $this->paginate('Travel');
+			// pr($this->paginate('Business'));die;
+			$this->set('businesses',$this->paginate('Business'));	
+			$businessesdata=$this->Business->find('all',array('contain'=>false,'order'=>array('Business.id'=>'DESC'),'fields'=>array('Business.id','Business.businessname','Business.totalReviews','Business.lastReviewdate','Business.averageRating'),'conditions'=>array('Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0,'Business.totalReviews !='=>0)));
+			$this->set('businessesdata',$businessesdata);		
+		}
+	}
+
+/**
+ * Search business user
+ **/
+
+	public function searchBusinessUser() { 
+		//when press submit
+		if($this->request->is('post')){
+			$searchValue = $this->request->data['searchFormUser']['search'];
+			$this->loadModel('Business');
+			$this->Business->recursive = 0;
+			$this->paginate = array(
+					    'conditions' => array(
+					    'Business.businessname LIKE' => "%$searchValue%",'Business.agency_id'=>$this->Session->read('Auth.User.id'),'Business.is_deleted'=>0));
+			$this->set('businesses',$this->paginate('Business'));
+			$this->set('selectedTab', 'users');
+			return $this -> render('index');
+		//if get request redirect to index
+		}else {
+			$this->redirect( '/dashboard' );
+		}
+	}
+
+
+/**
+ * view method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function view($id = null) {
+		if (!$this->Business->exists($id)) {
+			throw new NotFoundException(__('Invalid business'));
+		}
+		$options = array('conditions' => array('Business.' . $this->Business->primaryKey => $id));
+		$this->set('business', $this->Business->find('first', $options));
+	}
+
+/**
+ * add method
+ *
+ * @return void
+ */
+	public function add() {
+		
+	}
+
+/**
+ * edit method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function edit($id = null) {
+		
+	}
+
+/**
+ * delete method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function delete($id = null) {
+		
+	}
+
+
+	public function admin($section=null) {
+		//die($section);
+		if($this->request->is('post')){
+			switch ($section) {
+				case'emailtalk':
+					$resp=$this->emailTalk($this->request->data);
+					$this->Session->setFlash($resp['msg']);
+					$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+				break;
+				case'changepass':
+					$resp=$this->changePassword($this->request->data);
+					$this->Session->setFlash($resp['msg']);
+					$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+				break;
+				case'regEmail':
+					$resp=$this->registerEmail($this->request->data);
+					$this->Session->setFlash($resp['msg']);
+					$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+				break;
+				case 'uploadbanner':
+					$resp=$this->adminuploadbanner($this->request->data);
+					$this->Session->setFlash($resp['msg']);
+					$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+					break;
+				default:
+					if($this->request->data['AgencysiteSetting']['agencylogo']['name']){
+							$dest = '../../app/webroot/img/agencylogo';
+							$file = $this->request->data['AgencysiteSetting']['agencylogo'];
+							$dimension=getimagesize($file['tmp_name']);
+							$allowed =  array('gif','png' ,'jpg','jpeg');
+							$ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+						    $width=$dimension[0];
+						    $height=$dimension[1];
+						    if(in_array($ext, $allowed)){
+							    if($width>=270 && $height>=263){
+							    	$logo_image = $this->upload_image($dest,$file,'');
+									$this->request->data['AgencysiteSetting']['agencylogo']=$logo_image;
+									if(is_uploaded_file($file['tmp_name']))
+										{
+										    $n_width=270;
+										    $n_height=263;
+										    $dest1 = '../../app/webroot/img/agencylogo/medium';
+											$result = $this->Resize->resize($file['tmp_name'], realpath($dest1).'/'.$logo_image,"as_define",$n_width,$n_height,0,0,0,0);
+										}
+							    }else{
+							    	$this->Session->setFlash('Invalid Image Size. Image must be atleast 1170X290.');
+									$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+							    }
+							}else{
+								$this->Session->setFlash('Invalid Image format. Allowed Format(gif,png ,jpg,jpeg).');
+								$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+							}    
+										
+						}else{
+							if(isset($this->request->data['Agency']['logoname']) && $this->request->data['Agency']['logoname']){
+								$this->request->data['AgencysiteSetting']['agencylogo']=$this->request->data['Agency']['logoname'];		
+							}else{
+								$this->request->data['AgencysiteSetting']['agencylogo']="default.jpg";		
+							}
+						}
+						$udata['User']['id']=$this->Session->read('Auth.User.id');
+						$udata['User']['firstname']=$this->request->data['User']['firstname'];
+						$udata['User']['lastname']=$this->request->data['User']['lastname'];
+						$udata['User']['email']=$this->request->data['User']['email'];
+						$this->request->data['AgencysiteSetting']['user_id']=$this->Session->read('Auth.User.id');
+						if($this->request->data['Agency']['id']){
+							$this->request->data['AgencysiteSetting']['id']=$this->request->data['Agency']['id'];
+						}
+						$this->loadModel('User');
+						if($this->User->save($udata)){
+							$this->loadModel('AgencysiteSetting');
+							if($this->AgencysiteSetting->save($this->request->data['AgencysiteSetting'])){
+								$this->Session->setFlash('Admin has been saved');
+								$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+							}else{
+								$this->Session->setFlash('Unable to save Agency Data');
+								$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+							}
+							$this->Session->setFlash('User has been saved');
+							$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+						}else{
+							$this->Session->setFlash('Unable to save User Data');
+							$this->redirect(array('controller'=>'dashboard','action'=>'admin'));
+						}
+					break;
+			}
+
+						
+          
+		}
+		$this->loadModel('User');
+		$user=$this->User->find('first',array('conditions'=>array('User.id'=>$this->Session->read('Auth.User.id'))));
+		$this->set('user',$user);
+		$this->loadModel('AgencysiteSetting');
+		$agency=$this->AgencysiteSetting->find('first',array('conditions'=>array('AgencysiteSetting.user_id'=>$this->Session->read('Auth.User.id'))));
+		$this->set('agency',$agency);
+		$this->loadModel("AgencyTemplate");
+		$emailtemplate=$this->AgencyTemplate->find('first',array('conditions'=>array('AgencyTemplate.agency_id'=>$this->Session->read('Auth.User.id'))));
+		$this->set('emailtemplate',$emailtemplate);
+		$this->loadModel("DefaultTemplate");
+		$defaultemplate=$this->DefaultTemplate->find('first',array('conditions'=>array('DefaultTemplate.identifier'=>'agencyTemplate')));
+		$this->set('defaultemplate',$defaultemplate);
+		$this->loadModel('Country');
+		$countries=$this->Country->find('list',array('fields'=>array('Country.id','Country.country_name'),'order'=>array('country_name ASC')));
+		$this->set('countries',$countries);
+		$this->loadModel('State');
+		$states= $this->State->find('list',array('fields'=>array('id','stateName'),'order'=>array('stateName ASC')));
+		$this->set('states',$states);
+		if(isset($agency['AgencysiteSetting']['state_id']) && $agency['AgencysiteSetting']['state_id']){
+			$this->loadModel('City');
+			$cities= $this->City->find('list',array('fields'=>array('id','city_name'),'order'=>array('city_name ASC'),'conditions'=>array('City.state_id'=>$agency['AgencysiteSetting']['state_id'])));
+			$this->set('cities',array_unique($cities));
+		}else{
+			$cities="";
+			$this->set('cities',$cities);
+		}
+		
+	}
+
+	public function adminuploadbanner($data=null){
+		// die("Upload Banner");
+		if($data){
+          
+           if($data['AgencysiteSetting']['banner']['name']){
+				$dest = '../../app/webroot/img/banner';
+				$file = $data['AgencysiteSetting']['banner'];
+				$dimension=getimagesize($file['tmp_name']);
+				$allowed =  array('gif','png' ,'jpg','jpeg');
+				$ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+			    $width=$dimension[0];
+			    $height=$dimension[1];
+
+			    if(in_array($ext, $allowed)){
+				    if($width>=240 && $height>=290){
+				    	$banner_image = $this->upload_image($dest,$file,'');
+						$data['AgencysiteSetting']['banner']=$banner_image;
+						if(is_uploaded_file($file['tmp_name']))
+							{
+							    $n_width=240;
+							    $n_height=400;
+							    $dest1 = '../../app/webroot/img/banner/medium';
+								$result = $this->Resize->resize($file['tmp_name'], realpath($dest1).'/'.$banner_image,"as_define",$n_width,$n_height,0,0,0,0);
+							}
+				    }else{
+				    	
+				    		$res['error']=1;
+				    		$res['msg']='Invalid Image Size. Image must be atleast 240X290.';
+				    		return $res;
+				    		
+				    }
+				}else{
+
+							$res['error']=1;
+				    		$res['msg']='Invalid Image format. Allowed Format(gif,png ,jpg,jpeg).';
+				    		return $res;
+				}    
+							
+			}else{
+				 
+				if(isset($data['Agency']['banner']) && $data['Agency']['banner']){
+					 $data['AgencysiteSetting']['banner']=$data['Agency']['banner'];
+					 
+				}else{
+					$data['AgencysiteSetting']['banner']="";		
+			    }
+
+			}
+			$data['AgencysiteSetting']['id']=$data['Agency']['id'];
+            $this->loadModel('AgencysiteSetting');
+            if($this->AgencysiteSetting->save($data)){
+        		$res['error']=0;
+	    		$res['msg']='Admin has been updated successfully.';
+            }else{
+            	$res['error']=1;
+	    		$res['msg']='Unable to Save Data.';
+            }
+            return $res;
+		}else{
+			$res['error']=1;
+	    	$res['msg']='Unable to Save Data.';
+	    	return $res;
+		}
+		
+	}
+
+	public function emailTalk($data=null){
+		//die("email talk");
+		if($data){
+			 if(isset($data['Agency']['id']) && $data['Agency']['id'] ){
+			 	$data['AgencysiteSetting']['id']=$data['Agency']['id'];
+			 }
+             $data['AgencysiteSetting']['user_id']=$this->Session->read('Auth.User.id');
+             $this->loadModel('AgencysiteSetting');
+
+             if($this->AgencysiteSetting->save($data)){
+             		$res['error']=0;
+	    			$res['msg']='Admin has been updated successfully.';
+	    			return $res;
+             }else{
+             	$res['error']=1;
+	    		$res['msg']='Unable to Save Data.';
+	    		return $res;
+             }
+		}else{
+			$res['error']=1;
+	    	$res['msg']='Unable to Save Data.';
+	    	return $res;
+		}
+
+	}
+
+	function changePassword($data=null){
+		if($data){
+			if(trim($data['User']['password'])!=trim($data['User']['cpassword'])){
+               	$res['error']=1;
+		    	$res['msg']='Password do not match. Please try again.';
+		    	return $res;
+			}
+			$this->loadModel('User');
+			$user=$this->User->find('first',array('conditions'=>array('User.id'=>$this->Session->read('Auth.User.id')),'fields'=>array('User.password'),'contain'=>false));
+			$pass=AuthComponent::password($data['User']['oldpass']);
+			if(trim($user['User']['password'])==$pass){
+				$data['User']['id']=$this->Session->read('Auth.User.id');
+				if($this->User->save($data)){
+					$res['error']=1;
+			    	$res['msg']='Password has been updated successfully.';
+			    	return $res;
+				}else{
+					$res['error']=1;
+			    	$res['msg']='Unable to Save New Password.';
+			    	return $res;
+				} 
+			}else{
+				$res['error']=1;
+		    	$res['msg']='Invalid Current Password.';
+		    	return $res;
+			}
+		}else{
+			$res['error']=1;
+	    	$res['msg']='Unable to Save New Password.';
+	    	return $res;
+		}
+
+	}
+
+	function registerEmail($data=null){
+      if($data){
+      	if(isset($data['Template']['id']) && $data['Template']['id']){
+      		$data['AgencyTemplate']['id']=$data['Template']['id'];
+      	}
+      	$data['AgencyTemplate']['emailtemplatename']=$data['Template']['name'];
+      	$data['AgencyTemplate']['agency_id']=$this->Session->read('Auth.User.id');
+      	//$data['AgencyTemplate']['default']='<p>Hello,</p><p>You are successfully registered your Business Account.</p><p>BUsiness Name:{business_name}</p><p>BUsiness Phone:{business_phone}</p><p>BUsiness Address:{business_web_address}</p><p>BUsiness Email:{business_email}</p>';
+      	//$data['AgencyTemplate']['meargefields']='{business_name},{business_phone},{business_web_address},{business_email},{first_name},{last_name},{user_email}';
+      	//$data['AgencyTemplate']['default_signature']='<p>{first_name}</p><p>{last_name}</p><p>{company_name}</p>';
+      	// pr($data);die;
+      	$this->loadModel('AgencyTemplate');
+      	if($this->AgencyTemplate->save($data)){
+      		$res['error']=0;
+	    	$res['msg']='Email notification template has been updated successfully.';
+	    	return $res;
+      	}
+      }else{
+      		$res['error']=1;
+	    	$res['msg']='Unable to update emial notification template.';
+	    	return $res;
+      }
+	}
+	function validEmail()
+		{
+			//die("hello");
+			$email = trim($_REQUEST['data']['User']['email']);
+			$this->autoRender = false;
+			$this->loadModel('User');
+			$count = $this->User->find('count',array('conditions'=>array('User.email'=>$email,'User.email !='=>$this->Session->read('Auth.User.email'))));
+			if($count>0)
+			{
+				echo "false";die;
+			}
+			else
+			{
+				echo "true";die;
+			}	
+		}
+		function addvalidEmail()
+		{
+			//die("hello");
+			$email = trim($_REQUEST['data']['AgencysiteSetting']['additionalemailnotification']);
+			$this->autoRender = false;
+			$this->loadModel('User');
+			$count = $this->User->find('count',array('conditions'=>array('User.email'=>$email,'User.email !='=>$this->Session->read('Auth.User.email'))));
+			if($count>0)
+			{
+				echo "false";die;
+			}
+			else
+			{
+				echo "true";die;
+			}	
+		}
+		function checkValidPass()
+		{
+			$pass = trim($_REQUEST['data']['User']['oldpass']);
+			$this->autoRender = false;
+			$this->loadModel('User');
+			$user=$this->User->find('first',array('conditions'=>array('User.id'=>$this->Session->read('Auth.User.id')),'fields'=>array('User.password'),'contain'=>false));
+			$pass=AuthComponent::password($pass);
+			if($user['User']['password']==$pass){
+				echo "true";die;
+			}else{
+				echo "false";die;
+			}
+		}
+
+		public function training() { 
+		
+			$this->loadModel('Training');
+			$data=$this->Training->find('all');
+			//var_dump($trainings);die;
+		//  $this->Training->recursive = 0;
+		  $this->set('trainings',$data);			
+		
+		}
+
+
+}
